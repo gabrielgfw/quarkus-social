@@ -1,7 +1,9 @@
 package io.github.gabrielgfw.quarkussocial.rest;
 
+import io.github.gabrielgfw.quarkussocial.domain.model.User;
 import io.github.gabrielgfw.quarkussocial.rest.dto.CreateUserRequest;
 
+import javax.transaction.Transactional;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -12,8 +14,13 @@ import javax.ws.rs.core.Response;
 public class UserResource {
 
     @POST
+    @Transactional
     public Response createUser(CreateUserRequest userRequest) {
-        return Response.ok(userRequest).build();
+        User user = new User();
+        user.setName(userRequest.getName());
+        user.setAge(userRequest.getAge());
+        user.persist();
+        return Response.ok(user).build();
     }
 
     @GET
