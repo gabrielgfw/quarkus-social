@@ -3,14 +3,18 @@ package io.github.gabrielgfw.quarkussocial.rest;
 import io.github.gabrielgfw.quarkussocial.domain.model.User;
 import io.github.gabrielgfw.quarkussocial.domain.repository.UserRepository;
 import io.github.gabrielgfw.quarkussocial.rest.dto.CreateUserRequest;
+import io.github.gabrielgfw.quarkussocial.rest.dto.ResponseError;
 import io.quarkus.hibernate.orm.panache.PanacheQuery;
 import org.h2.command.ddl.CreateUser;
 
 import javax.inject.Inject;
 import javax.transaction.Transactional;
+import javax.validation.ConstraintViolation;
+import javax.validation.Validator;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.util.Set;
 
 @Path("/users")
 @Consumes(MediaType.APPLICATION_JSON)
@@ -18,15 +22,26 @@ import javax.ws.rs.core.Response;
 public class UserResource {
 
     private UserRepository userRepository;
+    private Validator validator;
 
     @Inject
-    public UserResource(UserRepository userRepository) {
+    public UserResource(UserRepository userRepository, Validator validator) {
         this.userRepository = userRepository;
+        this.validator = validator;
     }
 
     @POST          // Define o método HTTP para a entidade.
     @Transactional // Abre uma conexão com o bnaco de dados.
     public Response createUser(CreateUserRequest userRequest) {
+        // Ctrl + Alt + V = para criação da variável de recebimento do retorno.
+        Set<ConstraintViolation<CreateUserRequest>> violations = validator.validate(userRequest);
+
+        // Tratativa para caso tenha sido retornado alguma violação das validações presentes no userRequest:
+        if(!violations.isEmpty()) {
+            ResponseError responseError = ResponseError.createFromValidation(violations);
+            return Response.status(Response.Status.BAD_REQUEST).entity(responseError).build();
+        }
+
         User user = new User();
         user.setName(userRequest.getName());
         user.setAge(userRequest.getAge());
